@@ -1,32 +1,28 @@
 package com.example;
 
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "persons")
 public class Person {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
+    private String firstname;
     private String name;
-
-    @Column(nullable = false, unique = true)
     private String email;
-
-    @Column(nullable = false)
+    private String phonenumber;
     private String gender;
 
-    // Getters and Setters
-
+    // Getters et Setters
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getFirstname() {
+        return firstname;
+    }
+
+    public void setFirstname(String firstname) {
+        this.firstname = firstname;
     }
 
     public String getName() {
@@ -43,6 +39,14 @@ public class Person {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPhonenumber() {
+        return phonenumber;
+    }
+
+    public void setPhonenumber(String phonenumber) {
+        this.phonenumber = phonenumber;
     }
 
     public String getGender() {

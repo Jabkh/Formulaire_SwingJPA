@@ -9,8 +9,7 @@ import java.util.List;
 
 public class PersonApp extends JFrame {
 
-    private JTextField nameField;
-    private JTextField emailField;
+    private JTextField firstnameField, nameField, emailField, phonenumberField;
     private JComboBox<String> genderComboBox;
     private DefaultTableModel tableModel;
     private JTable personTable;
@@ -18,99 +17,168 @@ public class PersonApp extends JFrame {
 
     public PersonApp() {
         setTitle("Gestion des Personnes");
-        setSize(600, 400);
+        setSize(800, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
         personDAO = new PersonDAO();
 
-        // Création des champs du formulaire
+        // Form fields
+        firstnameField = new JTextField(15);
         nameField = new JTextField(15);
         emailField = new JTextField(15);
+        phonenumberField = new JTextField(15);
         genderComboBox = new JComboBox<>(new String[]{"Homme", "Femme", "Autre"});
 
-        // Création du modèle de table et du JTable
-        tableModel = new DefaultTableModel(new String[]{"Nom", "Email", "Genre"}, 0);
+        // Table model and JTable
+        tableModel = new DefaultTableModel(new String[]{"ID", "Prénom", "Nom", "Email", "Genre", "Téléphone"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column != 0; // Prevent ID modification
+            }
+        };
         personTable = new JTable(tableModel);
+        personTable.getColumnModel().getColumn(0).setMinWidth(0);
+        personTable.getColumnModel().getColumn(0).setMaxWidth(0);
+        personTable.getColumnModel().getColumn(0).setPreferredWidth(0);
 
-        // Chargement des données de la base de données
+        // Load data from database
         loadDataFromDatabase();
 
-        // Création des boutons
+        // Buttons
         JButton addButton = new JButton("Ajouter");
         JButton detailButton = new JButton("Détails");
+        JButton updateButton = new JButton("Mettre à jour");
+        JButton deleteButton = new JButton("Supprimer");
 
-        // Disposition du formulaire
+        // Form layout
         JPanel formPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.gridx = 0;
         gbc.gridy = 0;
 
+        formPanel.add(new JLabel("Prénom :"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(firstnameField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         formPanel.add(new JLabel("Nom :"), gbc);
         gbc.gridx = 1;
         formPanel.add(nameField, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         formPanel.add(new JLabel("Email :"), gbc);
         gbc.gridx = 1;
         formPanel.add(emailField, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
+        formPanel.add(new JLabel("Téléphone :"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(phonenumberField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 4;
         formPanel.add(new JLabel("Genre :"), gbc);
         gbc.gridx = 1;
         formPanel.add(genderComboBox, gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 3;
+        gbc.gridy = 5;
         gbc.gridwidth = 2;
         formPanel.add(addButton, gbc);
 
-        // Ajout du tableau et des boutons au layout principal
+        // Main layout
         setLayout(new BorderLayout());
         add(formPanel, BorderLayout.NORTH);
         add(new JScrollPane(personTable), BorderLayout.CENTER);
-        add(detailButton, BorderLayout.SOUTH);
 
-        // Action du bouton "Ajouter"
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String name = nameField.getText();
-                String email = emailField.getText();
-                String gender = (String) genderComboBox.getSelectedItem();
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(detailButton);
+        buttonPanel.add(updateButton);
+        buttonPanel.add(deleteButton);
+        add(buttonPanel, BorderLayout.SOUTH);
 
-                if (!name.isEmpty() && !email.isEmpty()) {
-                    Person person = new Person();
-                    person.setName(name);
-                    person.setEmail(email);
-                    person.setGender(gender);
+        // Add button action
+        addButton.addActionListener(e -> {
+            String firstname = firstnameField.getText();
+            String name = nameField.getText();
+            String email = emailField.getText();
+            String phonenumber = phonenumberField.getText();
+            String gender = (String) genderComboBox.getSelectedItem();
 
-                    personDAO.savePerson(person);
-                    tableModel.addRow(new Object[]{name, email, gender});
-                    nameField.setText("");
-                    emailField.setText("");
-                    genderComboBox.setSelectedIndex(0);
-                } else {
-                    JOptionPane.showMessageDialog(PersonApp.this, "Veuillez remplir tous les champs", "Erreur", JOptionPane.ERROR_MESSAGE);
-                }
+            if (!firstname.isEmpty() && !name.isEmpty() && !email.isEmpty()) {
+                Person person = new Person();
+                person.setFirstname(firstname);
+                person.setName(name);
+                person.setEmail(email);
+                person.setPhonenumber(phonenumber);
+                person.setGender(gender);
+
+                Long id = personDAO.savePerson(person);
+                tableModel.addRow(new Object[]{id, firstname, name, email, gender, phonenumber});
+
+                firstnameField.setText("");
+                nameField.setText("");
+                emailField.setText("");
+                phonenumberField.setText("");
+                genderComboBox.setSelectedIndex(0);
+            } else {
+                JOptionPane.showMessageDialog(PersonApp.this, "Veuillez remplir tous les champs", "Erreur", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        // Action du bouton "Détails"
-        detailButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int selectedRow = personTable.getSelectedRow();
-                if (selectedRow != -1) {
-                    Long id = (Long) personTable.getValueAt(selectedRow, 0);
-                    Person person = personDAO.getPersonById(id);
-                    JOptionPane.showMessageDialog(PersonApp.this, "Nom : " + person.getName() + "\nEmail : " + person.getEmail() + "\nGenre : " + person.getGender(), "Détails", JOptionPane.INFORMATION_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(PersonApp.this, "Veuillez sélectionner une ligne", "Erreur", JOptionPane.ERROR_MESSAGE);
-                }
+        // Detail button action
+        detailButton.addActionListener(e -> {
+            int selectedRow = personTable.getSelectedRow();
+            if (selectedRow != -1) {
+                Long id = (Long) tableModel.getValueAt(selectedRow, 0);
+                Person person = personDAO.getPersonById(id);
+                JOptionPane.showMessageDialog(PersonApp.this,
+                        "Prénom : " + person.getFirstname() + "\nNom : " + person.getName() +
+                                "\nEmail : " + person.getEmail() + "\nGenre : " + person.getGender() +
+                                "\nTéléphone : " + person.getPhonenumber(),
+                        "Détails", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(PersonApp.this, "Veuillez sélectionner une ligne", "Erreur", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Update button action
+        updateButton.addActionListener(e -> {
+            int selectedRow = personTable.getSelectedRow();
+            if (selectedRow != -1) {
+                Long id = (Long) tableModel.getValueAt(selectedRow, 0);
+                Person person = personDAO.getPersonById(id);
+                person.setFirstname(firstnameField.getText());
+                person.setName(nameField.getText());
+                person.setEmail(emailField.getText());
+                person.setPhonenumber(phonenumberField.getText());
+                person.setGender((String) genderComboBox.getSelectedItem());
+
+                personDAO.updatePerson(person);
+                tableModel.setValueAt(person.getFirstname(), selectedRow, 1);
+                tableModel.setValueAt(person.getName(), selectedRow, 2);
+                tableModel.setValueAt(person.getEmail(), selectedRow, 3);
+                tableModel.setValueAt(person.getGender(), selectedRow, 4);
+                tableModel.setValueAt(person.getPhonenumber(), selectedRow, 5);
+            } else {
+                JOptionPane.showMessageDialog(PersonApp.this, "Veuillez sélectionner une ligne", "Erreur", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Delete button action
+        deleteButton.addActionListener(e -> {
+            int selectedRow = personTable.getSelectedRow();
+            if (selectedRow != -1) {
+                Long id = (Long) tableModel.getValueAt(selectedRow, 0);
+                personDAO.deletePerson(id);
+                tableModel.removeRow(selectedRow);
+            } else {
+                JOptionPane.showMessageDialog(PersonApp.this, "Veuillez sélectionner une ligne", "Erreur", JOptionPane.ERROR_MESSAGE);
             }
         });
     }
@@ -118,14 +186,18 @@ public class PersonApp extends JFrame {
     private void loadDataFromDatabase() {
         List<Person> persons = personDAO.getAllPersons();
         for (Person person : persons) {
-            tableModel.addRow(new Object[]{person.getName(), person.getEmail(), person.getGender()});
+            tableModel.addRow(new Object[]{
+                    person.getId(),
+                    person.getFirstname(),
+                    person.getName(),
+                    person.getEmail(),
+                    person.getGender(),
+                    person.getPhonenumber()
+            });
         }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            PersonApp app = new PersonApp();
-            app.setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new PersonApp().setVisible(true));
     }
 }
